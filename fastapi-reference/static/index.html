@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tasklet — FastAPI todo app</title>
+    <meta name="description" content="A responsive todo app served by the Tasklet FastAPI backend." />
+    <style>
+      :root {
+        --bg: #faf8f3;
+        --ink: #1f2a26;
+        --muted: #6b7a74;
+        --line: #e3ded3;
+        --primary: #1f6f63;
+        --danger: #b4362c;
+        --radius: 12px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+      h1 { font-size: clamp(28px, 6vw, 40px); margin: 0; }
+      .muted { color: var(--muted); font-size: 14px; }
+      .card {
+        background: #fff; border: 1px solid var(--line);
+        border-radius: var(--radius); padding: 16px; margin-top: 16px;
+      }
+      label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+      input, select, button, textarea {
+        font: inherit; border-radius: 8px; border: 1px solid var(--line);
+        padding: 10px 12px; background: #fff; color: inherit; width: 100%;
+      }
+      button { background: var(--primary); color: #fff; border-color: var(--primary); cursor: pointer; }
+      button.secondary { background: #fff; color: var(--ink); }
+      button.link { background: none; border: none; color: var(--primary); width: auto; padding: 0; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; }
+      .row > * { flex: 1 1 160px; }
+      .row > button { flex: 0 0 auto; }
+      .error { color: var(--danger); font-size: 13px; margin: 4px 0 0; }
+      ul { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+      li.todo { display: flex; gap: 12px; align-items: flex-start; }
+      li.todo input[type="checkbox"] { width: 18px; height: 18px; margin-top: 3px; flex: none; }
+      li.todo .body { flex: 1; min-width: 0; }
+      li.todo.done .title { text-decoration: line-through; opacity: 0.6; }
+      .title { font-weight: 600; word-break: break-word; }
+      .tag {
+        display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px;
+        border: 1px solid var(--line); color: var(--muted); margin-right: 6px;
+      }
+      .overdue { color: var(--danger); font-weight: 600; }
+      .icon { width: auto; flex: none; background: none; color: var(--muted); border: none; cursor: pointer; }
+      .hidden { display: none !important; }
+      @media (max-width: 480px) { .row > * { flex: 1 1 100%; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="row" style="align-items: center; justify-content: space-between">
+        <h1>Tasklet</h1>
+        <button id="signout" class="link hidden" type="button">Sign out</button>
+      </header>
+
+      <!-- Auth -->
+      <section id="auth-view" class="card">
+        <h2 id="auth-title" style="margin-top: 0">Sign in</h2>
+        <form id="auth-form" novalidate>
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required />
+          <p class="error hidden" id="email-error"></p>
+          <label for="password" style="margin-top: 12px">Password (min 8 characters)</label>
+          <input id="password" type="password" autocomplete="current-password" required />
+          <p class="error hidden" id="password-error"></p>
+          <button style="margin-top: 16px" type="submit">Continue</button>
+          <p class="error hidden" id="auth-error"></p>
+        </form>
+        <p class="muted" style="margin-bottom: 0">
+          <span id="auth-switch-text">New here?</span>
+          <button class="link" id="auth-switch" type="button">Create an account</button>
+        </p>
+      </section>
+
+      <!-- App -->
+      <section id="app-view" class="hidden">
+        <form id="create-form" class="card" novalidate>
+          <div class="row">
+            <input id="new-title" placeholder="What needs doing?" maxlength="200" />
+            <button type="submit">Add task</button>
+          </div>
+          <p class="error hidden" id="title-error"></p>
+          <div class="row" style="margin-top: 12px">
+            <div>
+              <label for="new-priority">Priority</label>
+              <select id="new-priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div>
+              <label for="new-due">Due date</label>
+              <input id="new-due" type="date" />
+            </div>
+          </div>
+        </form>
+
+        <div class="row" style="margin-top: 16px">
+          <select id="filter" aria-label="Filter tasks">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="completed">Done</option>
+          </select>
+          <input id="search" type="search" placeholder="Search tasks…" maxlength="200" />
+        </div>
+
+        <p class="muted" id="status" role="status" style="margin-top: 12px"></p>
+        <ul id="list"></ul>
+      </section>
+    </main>
+
+    <script>
+      const API = "";
+      const $ = (id) => document.getElementById(id);
+      let token = localStorage.getItem("token");
+      let mode = "signin";
+
+      function show(el, on) { el.classList.toggle("hidden", !on); }
+      function setError(el, msg) { el.textContent = msg || ""; show(el, Boolean(msg)); }
+
+      async function api(path, options = {}) {
+        const res = await fetch(API + path, {
+          ...options,
+          headers: {
+            ...(options.body ? { "Content-Type": "application/json" } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(options.headers || {}),
+          },
+        });
+        if (res.status === 401) { signOut(); throw new Error("Please sign in again."); }
+        if (res.status === 204) return null;
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const field = data.fields ? Object.values(data.fields)[0] : null;
+          throw new Error(field || data.detail || "Request failed");
+        }
+        return data;
+      }
+
+      // --- Auth ---
+      $("auth-switch").addEventListener("click", () => {
+        mode = mode === "signin" ? "signup" : "signin";
+        $("auth-title").textContent = mode === "signin" ? "Sign in" : "Create your account";
+        $("auth-switch-text").textContent = mode === "signin" ? "New here?" : "Already registered?";
+        $("auth-switch").textContent = mode === "signin" ? "Create an account" : "Sign in";
+        setError($("auth-error"), "");
+      });
+
+      $("auth-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const email = $("email").value.trim();
+        const password = $("password").value;
+        setError($("email-error"), /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? "" : "Enter a valid email address");
+        setError($("password-error"), password.length >= 8 ? "" : "Password must be at least 8 characters");
+        if ($("email-error").textContent || $("password-error").textContent) return;
+        try {
+          let data;
+          if (mode === "signup") {
+            data = await api("/api/auth/register", { method: "POST", body: JSON.stringify({ email, password }) });
+          } else {
+            const body = new URLSearchParams({ username: email, password });
+            const res = await fetch(API + "/api/auth/login", { method: "POST", body });
+            data = await res.json();
+            if (!res.ok) throw new Error(data.detail || "Sign in failed");
+          }
+          token = data.access_token;
+          localStorage.setItem("token", token);
+          enterApp();
+        } catch (error) {
+          setError($("auth-error"), error.message);
+        }
+      });
+
+      function signOut() {
+        token = null;
+        localStorage.removeItem("token");
+        show($("app-view"), false);
+        show($("auth-view"), true);
+        show($("signout"), false);
+      }
+      $("signout").addEventListener("click", signOut);
+
+      // --- Todos ---
+      $("create-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = $("new-title").value.trim();
+        setError($("title-error"), title ? "" : "Title is required");
+        if (!title) return;
+        try {
+          await api("/api/todos", {
+            method: "POST",
+            body: JSON.stringify({
+              title,
+              priority: $("new-priority").value,
+              due_date: $("new-due").value || null,
+            }),
+          });
+          $("new-title").value = "";
+          $("new-due").value = "";
+          await load();
+        } catch (error) {
+          setError($("title-error"), error.message);
+        }
+      });
+
+      $("filter").addEventListener("change", load);
+      $("search").addEventListener("input", debounce(load, 250));
+
+      function debounce(fn, ms) {
+        let t;
+        return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+      }
+
+      function todoNode(todo) {
+        const li = document.createElement("li");
+        li.className = "todo card" + (todo.completed ? " done" : "");
+
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.checked = todo.completed;
+        box.setAttribute("aria-label", `Complete ${todo.title}`);
+        box.addEventListener("change", async () => {
+          try { await api(`/api/todos/${todo.id}`, { method: "PATCH", body: JSON.stringify({ completed: box.checked }) }); await load(); }
+          catch (error) { alert(error.message); }
+        });
+
+        const body = document.createElement("div");
+        body.className = "body";
+        const title = document.createElement("p");
+        title.className = "title";
+        title.style.margin = "0";
+        title.textContent = todo.title;
+        const meta = document.createElement("p");
+        meta.className = "muted";
+        meta.style.margin = "4px 0 0";
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = todo.priority;
+        meta.append(tag);
+        if (todo.due_date) {
+          const due = document.createElement("span");
+          const overdue = !todo.completed && todo.due_date < new Date().toISOString().slice(0, 10);
+          due.className = overdue ? "overdue" : "";
+          due.textContent = overdue ? `${todo.due_date} · overdue` : todo.due_date;
+          meta.append(due);
+        }
+        body.append(title, meta);
+
+        const del = document.createElement("button");
+        del.className = "icon";
+        del.type = "button";
+        del.textContent = "Delete";
+        del.setAttribute("aria-label", `Delete ${todo.title}`);
+        del.addEventListener("click", async () => {
+          try { await api(`/api/todos/${todo.id}`, { method: "DELETE" }); await load(); }
+          catch (error) { alert(error.message); }
+        });
+
+        li.append(box, body, del);
+        return li;
+      }
+
+      async function load() {
+        const params = new URLSearchParams({ status: $("filter").value, search: $("search").value });
+        $("status").textContent = "Loading…";
+        try {
+          const todos = await api(`/api/todos?${params}`);
+          $("list").replaceChildren(...todos.map(todoNode));
+          const open = todos.filter((t) => !t.completed).length;
+          $("status").textContent = todos.length ? `${open} open` : "No tasks in this view.";
+        } catch (error) {
+          $("status").textContent = error.message;
+        }
+      }
+
+      function enterApp() {
+        show($("auth-view"), false);
+        show($("app-view"), true);
+        show($("signout"), true);
+        load();
+      }
+
+      if (token) enterApp();
+    </script>
+  </body>
+</html>
