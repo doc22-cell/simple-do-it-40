@@ -1,14 +1,66 @@
-# Welcome to your Lovable project
+# Simple Task Studio
+
+You are a senior full-stack engineer.
+
+Build a production-quality Todo application.
+
+Tech stack
+
+ HTML
+
+ FastAPI
+
+Requirements:
+
+ Input validation
+
+ Error handling
+
+ Responsive UI
+
+Before coding:
+
+ Propose the architecture.
+
+ Define the database schema.
+
+ Define the API endpoints.
+
+ Explain the folder structure.
+
+Then implement the application incrementally.
+
+After each major component:
+
+ Run tests
+
+ Check for errors
+
+ Fix issues
+
+ Continue
+
+Do not rewrite working components unnecessarily.
+
+At the end provide:
+
+ Setup instructions
+
+ Environment variables
+
+ API documentation
+
+ Testing instructions
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/6c46c045-d615-479d-9695-b6fd0229037b).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +72,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
