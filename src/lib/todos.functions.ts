@@ -59,12 +59,18 @@ export const updateTodo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => updateTodoSchema.parse(input))
   .handler(async ({ data, context }): Promise<Todo> => {
-    const patch: Record<string, unknown> = {};
-    if (data.title !== undefined) patch["title"] = data.title;
-    if (data.notes !== undefined) patch["notes"] = data.notes;
-    if (data.priority !== undefined) patch["priority"] = data.priority;
-    if (data.dueDate !== undefined) patch["due_date"] = data.dueDate;
-    if (data.completed !== undefined) patch["completed"] = data.completed;
+    const patch: {
+      title?: string;
+      notes?: string | null;
+      priority?: Todo["priority"];
+      due_date?: string | null;
+      completed?: boolean;
+    } = {};
+    if (data.title !== undefined) patch.title = data.title;
+    if (data.notes !== undefined) patch.notes = data.notes ?? null;
+    if (data.priority !== undefined) patch.priority = data.priority;
+    if (data.dueDate !== undefined) patch.due_date = data.dueDate;
+    if (data.completed !== undefined) patch.completed = data.completed;
     if (Object.keys(patch).length === 0) fail("Nothing to update.");
 
     const { data: row, error } = await context.supabase
