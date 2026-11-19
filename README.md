@@ -1,74 +1,41 @@
 # Simple Task Studio
 
-You are a senior full-stack engineer.
+A web application project exploring task management and modern TypeScript-based frontend development.
 
-Build a production-quality Todo application.
+## Overview
+This repository contains a task-oriented application scaffold built with a React and TypeScript ecosystem. The original project brief outlines a todo application with input validation, error handling, responsive design, and planned API/database architecture.
 
-Tech stack
+## Technology
+- TypeScript and React
+- TanStack Router / TanStack Start
+- Vite
+- Tailwind CSS and Radix UI components
+- React Hook Form and Zod
+- Vitest and ESLint
 
- HTML
+The project README identifies Lovable as a development tool used for the project.
 
- FastAPI
-
-Requirements:
-
- Input validation
-
- Error handling
-
- Responsive UI
-
-Before coding:
-
- Propose the architecture.
-
- Define the database schema.
-
- Define the API endpoints.
-
- Explain the folder structure.
-
-Then implement the application incrementally.
-
-After each major component:
-
- Run tests
-
- Check for errors
-
- Fix issues
-
- Continue
-
-Do not rewrite working components unnecessarily.
-
-At the end provide:
-
- Setup instructions
-
- Environment variables
-
- API documentation
-
- Testing instructions
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/6c46c045-d615-479d-9695-b6fd0229037b).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+## Local development
+```bash
+git clone https://github.com/doc22-cell/simple-do-it-40.git
+cd simple-do-it-40
+npm install
 npm run dev
 ```
+
+## Scripts
+- `npm run dev`: start development server
+- `npm run build`: create production build
+- `npm run lint`: run ESLint
+- `npm run format`: format code with Prettier
+
+## Project goals
+- Build an approachable task-management experience.
+- Explore reusable frontend components and form validation.
+- Develop a foundation for further application and backend integration.
+
+## Implementation note
+The original brief mentions HTML and FastAPI, but the checked-in `package.json` describes a TypeScript/React application. Do not assume a FastAPI backend or database is implemented without verifying the source.
+
+## Author
+Mythreyan — [GitHub](https://github.com/doc22-cell)
